@@ -1,0 +1,22 @@
+[project]
+name = "tidb-realtime-rag"
+version = "0.1.0"
+description = "日本語リアルタイムRAG on TiDB：stale RAG の鮮度を測り、単一エンジンで解消する検証"
+requires-python = ">=3.10"
+dependencies = [
+    "pymysql>=1.1",
+    "cryptography>=42",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+vertex = ["google-genai>=1.0"]   # rt_demo.py の Gemini 回答生成 / Vertex 埋め込み
+openai = ["openai>=1.40"]         # 任意（OpenAI 埋め込みを使う場合）
+eval = ["matplotlib>=3.8"]        # rt_charts.py のグラフ生成
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"

@@ -1,0 +1,11 @@
+qmode,condition,freshness_error_rate,wrong,total,refreshes
+uniform,live,0.0000,0,100,0
+uniform,sync@1,0.0000,0,100,100
+uniform,sync@5,0.0000,0,100,20
+uniform,sync@20,0.0100,1,100,5
+uniform,sync@60,0.0300,3,100,1
+active,live,0.0000,0,100,0
+active,sync@1,0.0000,0,100,100
+active,sync@5,0.3500,35,100,20
+active,sync@20,0.4300,43,100,5
+active,sync@60,0.4300,43,100,1
