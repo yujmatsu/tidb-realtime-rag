@@ -66,9 +66,14 @@ python scripts/rt_htap_scale.py
 # 実NLデモ（Gemini回答で Before/After の会話ログ。要 Vertex 認証）
 python scripts/rt_demo.py
 
+# mem9連携デモ（任意・コンテスト加点用。要 MEM9_API_KEY。未設定時は mem9なし回答のみ）
+python scripts/rt_demo_mem9.py
+
 # 実測CSVから記事用グラフ(PNG)を生成
 python scripts/rt_charts.py
 ```
+
+> mem9（TiDB上のエージェント向け長期記憶）連携は `src/expagent/mem9.py` に実装。`MEM9_API_KEY`（[api.mem9.ai](https://api.mem9.ai) or セルフホスト）で有効化。鮮度の主結果は mem9 非依存です。
 
 ## 構成
 
