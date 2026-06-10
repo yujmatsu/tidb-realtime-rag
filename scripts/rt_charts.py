@@ -45,22 +45,6 @@ def chart_freshness_lines(fr):
     plt.savefig(p); plt.close(); print("wrote", p)
 
 
-def chart_freshness_bar(fr):
-    conds = ["live", "sync@1", "sync@5", "sync@20", "sync@60"]
-    labels = ["After\n(TiDB live)", "Before\nCDC@1", "Before\n@5", "Before\n@20", "Before\n@60"]
-    vals = [fr["active"][c] for c in conds]
-    colors = ["#2b8a3e", "#74b816", "#f08c00", "#e8590c", "#d6336c"]
-    plt.figure(figsize=(6.4, 4))
-    b = plt.bar(labels, vals, color=colors)
-    plt.bar_label(b, fmt="%.0f%%", padding=3)
-    plt.ylabel("Freshness error rate (%)")
-    plt.title("Active queries: stale answers by architecture")
-    plt.ylim(0, 50)
-    plt.tight_layout()
-    p = os.path.join(FIG, "fig2b_freshness_bar.png")
-    plt.savefig(p); plt.close(); print("wrote", p)
-
-
 def chart_htap():
     # 正直版: rt_htap_scale.csv の実測（TiDB Cloud Zero, GROUP BY集計, 50k-500k）
     rows = []
@@ -101,23 +85,34 @@ def chart_harm():
 
 
 def chart_interference():
-    # 干渉耐性: 書き込み負荷を上げても検索レイテンシ(p50/p95)が劣化しない
-    rows = []
+    # 干渉耐性: 書き込み負荷下でも検索p50/p95が劣化しないか。
+    # 旧スキーマ(単一writer: 目標レート+実書き込み数) / 新スキーマ(並列writer: 実効レート) の両対応。
     with open(os.path.join(RES, "rt_interference.csv"), encoding="utf-8") as f:
-        for r in csv.DictReader(f):
-            rows.append((r["write_rate_per_s"], float(r["read_p50_ms"]), float(r["read_p95_ms"])))
-    labels = [f"{r}/s" for r, _, _ in rows]
-    p50 = [a for _, a, _ in rows]
-    p95 = [b for _, _, b in rows]
+        rd = list(csv.DictReader(f))
+    if rd and "effective_writes_per_s" in rd[0]:
+        rows = [(int(r["writer_threads"]), float(r["effective_writes_per_s"]),
+                 float(r["read_p50_ms"]), float(r["read_p95_ms"])) for r in rd]
+        labels = [f"{eff:.0f}/s\n({nw}w)" for nw, eff, _, _ in rows]
+        p50 = [a for _, _, a, _ in rows]; p95 = [b for _, _, _, b in rows]
+        xlabel = "Effective concurrent write load (updates/sec, #writer threads)"
+        title = "HTAP interference resistance:\nread latency stays flat as effective write load rises"
+    else:  # 旧: 単一writer。目標レートと計測窓中の実書き込み数を正直に表示。
+        rows = [(r["write_rate_per_s"], float(r["read_p50_ms"]), float(r["read_p95_ms"]),
+                 int(r.get("writes_done", 0))) for r in rd]
+        labels = ["no writes" if r == "0" else f"target {r}/s\n({w} writes)" for r, _, _, w in rows]
+        p50 = [a for _, a, _, _ in rows]; p95 = [b for _, _, b, _ in rows]
+        xlabel = "Concurrent writes during read window (single writer; actual count shown)"
+        title = ("HTAP interference: read latency flat under concurrent writes\n"
+                 "(provisional: single-writer load modest; parallel-writer re-run recommended)")
     x = range(len(labels))
     plt.figure(figsize=(6.4, 4))
     plt.plot(x, p95, "s--", color="#e8590c", lw=2, ms=7, label="read p95")
     plt.plot(x, p50, "o-", color="#1c7ed6", lw=2.5, ms=8, label="read p50")
-    plt.xticks(list(x), labels)
-    plt.xlabel("Concurrent write load (stock updates/sec)")
+    plt.xticks(list(x), labels, fontsize=9)
+    plt.xlabel(xlabel, fontsize=9)
     plt.ylabel("Live RAG read latency (ms)")
-    plt.title("HTAP interference resistance:\nread latency stays flat under concurrent writes")
-    plt.ylim(0, 220)
+    plt.title(title, fontsize=10)
+    plt.ylim(0, max(max(p95) * 1.15, 200))
     for xi, v in zip(x, p50):
         plt.annotate(f"{v:.0f}ms", (xi, v), textcoords="offset points", xytext=(0, -14), color="#1c7ed6")
     plt.legend(fontsize=9)
@@ -144,7 +139,6 @@ def chart_freshness_boundary():
 if __name__ == "__main__":
     fr = load_freshness()
     chart_freshness_lines(fr)
-    chart_freshness_bar(fr)
     chart_harm()
     chart_htap()
     chart_interference()

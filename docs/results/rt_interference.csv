@@ -1,4 +1,4 @@
-write_rate_per_s,read_p50_ms,read_p95_ms,writes_done
-0,147,171,0
-5,150,169,18
-20,149,170,33
+writer_threads,effective_writes_per_s,read_p50_ms,read_p95_ms,reads_n
+0,0.0,157,349,40
+4,27.6,158,209,40
+12,84.8,151,188,40
