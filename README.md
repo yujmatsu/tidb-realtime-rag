@@ -3,8 +3,8 @@
 業務データ（在庫・ステータス等）に答えるRAGで、**データが更新された直後に古い答えを返す（stale RAG）問題**を
 定量的に計測し、データと埋め込みを**単一エンジン（TiDB）**に置いて鮮度ゼロ遅延にする検証コードです。
 
-> 解説記事：[`doc/ARTICLE.md`](./doc/ARTICLE.md)（Zenn投稿コンテスト「TiDBで作るAI時代のデータ基盤」応募作）
-> 実測結果まとめ：[`doc/RESULTS.md`](./doc/RESULTS.md)
+> 解説記事：[`docs/ARTICLE.md`](./docs/ARTICLE.md)（Zenn投稿コンテスト「TiDBで作るAI時代のデータ基盤」応募作）
+> 実測結果まとめ：[`docs/RESULTS.md`](./docs/RESULTS.md)
 
 ## この検証で分かること（3つ）
 
@@ -63,6 +63,9 @@ python scripts/rt_primary.py
 # HTAPスケール（TiKV行 vs TiFlash列の集計レイテンシ、50k-500k）
 python scripts/rt_htap_scale.py
 
+# 干渉耐性（在庫更新を並行で流しながらライブRAG検索の p50/p95 を計測）
+python scripts/rt_interference.py
+
 # 実NLデモ（Gemini回答で Before/After の会話ログ。要 Vertex 認証）
 python scripts/rt_demo.py
 
@@ -86,7 +89,8 @@ src/expagent/
 scripts/rt_*.py            鮮度計測 / 実害 / 鮮度境界 / HTAPスケール / NLデモ / グラフ
 docs/results/              実測CSV・md（記事の数値の裏付け）
 docs/figures/              生成グラフ(PNG)
-doc/ARTICLE.md, RESULTS.md 記事・結果まとめ
+docs/ARTICLE.md, docs/RESULTS.md  記事・結果まとめ
+docs/NANOBANANA-PROMPTS.md 概念図の生成プロンプト
 ```
 
 ## 注意（実機検証で判明した運用知見）

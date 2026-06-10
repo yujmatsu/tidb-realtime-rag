@@ -37,18 +37,34 @@ def main():
     mem = Mem9()
     print(f"mem9 enabled: {mem.enabled}  (MEM9_API_KEY {'設定済' if mem.enabled else '未設定→無効化'})")
 
-    # 過去セッションのユーザー文脈を記憶（mem9）
-    if mem.enabled:
-        mem.store("ユーザーは渋谷区在住で、防災と子育ての情報に関心がある。"
-                  "以前ワイヤレスイヤホンの在庫を問い合わせた。", labels=["user-profile"])
-
     question = "今おすすめの在庫あり商品を1つ教えて"
     # ライブ在庫(最新)を取得
     cur.execute("SELECT name, stock, category FROM products_live WHERE stock>0 ORDER BY product_id LIMIT 5")
     stock_ctx = "\n".join(f"- {n}（在庫{s}・{c}）" for n, s, c in cur.fetchall())
-    # mem9 からユーザー文脈を想起
-    recalled = mem.search(question) if mem.enabled else []
-    user_ctx = "\n".join(str(m.get("content", m)) for m in recalled) if recalled else None
+
+    # 過去セッションのユーザー文脈を記憶→想起（mem9）。未検証APIのため診断＋ポーリング。
+    recalled = []
+    if mem.enabled:
+        import time
+        try:
+            r = mem.store("ユーザーは渋谷区在住で、防災と子育ての情報に関心がある。"
+                          "以前ワイヤレスイヤホンの在庫を問い合わせた。", labels=["user-profile"])
+            print("mem9 store ->", str(r)[:200])
+            # 非同期インデックス対策: 数回ポーリングして生レスポンスを観察
+            for i in range(6):
+                time.sleep(3)
+                raw = mem._req("GET", "/v1alpha2/mem9s/memories", params={"query": question})
+                print(f"  search[{i}] raw ->", str(raw)[:240])
+                items = raw if isinstance(raw, list) else (
+                    raw.get("memories") or raw.get("results") or raw.get("data") or [])
+                if items:
+                    recalled = items
+                    break
+            allmem = mem._req("GET", "/v1alpha2/mem9s/memories")
+            print("  list-all raw ->", str(allmem)[:240])
+        except Exception as e:
+            print("⚠️ mem9 API error:", type(e).__name__, str(e)[:240])
+    user_ctx = "\n".join(str(m.get("content", m) if isinstance(m, dict) else m) for m in recalled) if recalled else None
 
     client = get_genai_client()
     print("\n👤", question)

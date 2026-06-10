@@ -100,6 +100,32 @@ def chart_harm():
     plt.savefig(p); plt.close(); print("wrote", p)
 
 
+def chart_interference():
+    # 干渉耐性: 書き込み負荷を上げても検索レイテンシ(p50/p95)が劣化しない
+    rows = []
+    with open(os.path.join(RES, "rt_interference.csv"), encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            rows.append((r["write_rate_per_s"], float(r["read_p50_ms"]), float(r["read_p95_ms"])))
+    labels = [f"{r}/s" for r, _, _ in rows]
+    p50 = [a for _, a, _ in rows]
+    p95 = [b for _, _, b in rows]
+    x = range(len(labels))
+    plt.figure(figsize=(6.4, 4))
+    plt.plot(x, p95, "s--", color="#e8590c", lw=2, ms=7, label="read p95")
+    plt.plot(x, p50, "o-", color="#1c7ed6", lw=2.5, ms=8, label="read p50")
+    plt.xticks(list(x), labels)
+    plt.xlabel("Concurrent write load (stock updates/sec)")
+    plt.ylabel("Live RAG read latency (ms)")
+    plt.title("HTAP interference resistance:\nread latency stays flat under concurrent writes")
+    plt.ylim(0, 220)
+    for xi, v in zip(x, p50):
+        plt.annotate(f"{v:.0f}ms", (xi, v), textcoords="offset points", xytext=(0, -14), color="#1c7ed6")
+    plt.legend(fontsize=9)
+    plt.tight_layout()
+    p = os.path.join(FIG, "fig6_interference.png")
+    plt.savefig(p); plt.close(); print("wrote", p)
+
+
 def chart_freshness_boundary():
     # 鮮度の境界: 点参照(TiKV)=即時 vs 分析/ベクトル(TiFlash)~142ms
     labels = ["Point read\n(TiKV row,\nread-your-writes)", "Analytics/vector\n(TiFlash columnar,\nsync)"]
@@ -121,5 +147,6 @@ if __name__ == "__main__":
     chart_freshness_bar(fr)
     chart_harm()
     chart_htap()
+    chart_interference()
     chart_freshness_boundary()
     print("done")
